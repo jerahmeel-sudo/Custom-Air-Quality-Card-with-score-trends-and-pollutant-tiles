@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Living Room Air Quality Card — Home Assistant</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Google Sans', Roboto, system-ui, -apple-system, sans-serif;
+    background: #0a1929;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+  }
+  .header {
+    color: #a8c0e0;
+    font-size: 13px;
+    margin-bottom: 24px;
+    text-align: center;
+    max-width: 480px;
+    line-height: 1.6;
+  }
+  .header strong { color: #ffffff; font-weight: 500; }
+  .card {
+    background: #0f2845;
+    border-radius: 22px;
+    width: 480px;
+    max-width: 100%;
+    padding: 0;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  }
+  .header-section {
+    padding: 20px 20px 14px 20px;
+  }
+  .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+  .room-title { font-size: 15px; color: #ffffff; font-weight: 500; }
+  .room-subtitle { font-size: 11px; color: #6e87a8; margin-top: 2px; }
+  .status-badge {
+    background: rgba(253, 230, 138, 0.12);
+    border: 1px solid rgba(253, 230, 138, 0.35);
+    border-radius: 999px;
+    padding: 5px 12px;
+    font-size: 11px;
+    color: #fde68a;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    background: #fde68a;
+    border-radius: 50%;
+  }
+  .main-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .score-block {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .score-number { font-size: 54px; font-weight: 400; color: #fde68a; line-height: 1; }
+  .score-max { font-size: 14px; color: #a8c0e0; }
+  .advice { font-size: 12px; color: #a8c0e0; margin-top: 6px; }
+  .climate-row { display: flex; gap: 14px; margin-top: 14px; }
+  .climate-value { display: flex; align-items: baseline; gap: 4px; }
+  .climate-number { font-size: 24px; font-weight: 400; color: #ffffff; }
+  .climate-unit { font-size: 11px; color: #a8c0e0; }
+  .climate-label { font-size: 10px; color: #6e87a8; margin-top: 2px; }
+  .divider-vertical { width: 1px; background: #1e3a5f; }
+  .ring-container {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+  }
+  .ring-svg {
+    transform: rotate(-90deg);
+    width: 100%;
+    height: 100%;
+  }
+  .ring-inner {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .ring-label { font-size: 11px; color: #a8c0e0; }
+  .ring-percent { font-size: 11px; color: #fde68a; font-weight: 500; }
+  .graph-section {
+    padding: 0 14px;
+    margin: 0 6px 14px 6px;
+    height: 60px;
+    position: relative;
+  }
+  .graph-section svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .graph-legend {
+    position: absolute;
+    top: -2px;
+    left: 14px;
+    display: flex;
+    gap: 14px;
+    font-size: 10px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 2px; }
+  .tiles-section {
+    padding: 0 20px 20px 20px;
+    border-radius: 0 0 22px 22px;
+  }
+  .tiles-divider {
+    padding-top: 14px;
+    border-top: 1px solid #1e3a5f;
+  }
+  .tile-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .tile-grid-2 {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .tile { padding: 0 6px; min-width: 0; overflow: hidden; }
+  .tile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    gap: 4px;
+  }
+  .tile-name {
+    font-size: 11px;
+    color: #a8c0e0;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .tile-status {
+    font-size: 9px;
+    white-space: nowrap;
+  }
+  .tile-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+  }
+  .tile-value {
+    font-size: 22px;
+    font-weight: 400;
+    color: #ffffff;
+    line-height: 1;
+    white-space: nowrap;
+  }
+  .tile-unit {
+    font-size: 10px;
+    color: #6e87a8;
+    white-space: nowrap;
+  }
+  .tile-bar {
+    height: 3px;
+    background: #1e3a5f;
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .tile-bar-fill {
+    height: 100%;
+    border-radius: 2px;
+  }
+  .footer {
+    margin-top: 32px;
+    color: #6e87a8;
+    font-size: 12px;
+    text-align: center;
+    line-height: 1.6;
+    max-width: 480px;
+  }
+  .footer a { color: #a8c0e0; text-decoration: none; }
+  .footer a:hover { color: #ffffff; }
+  .badge-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .tech-badge {
+    background: rgba(255, 255, 255, 0.06);
+    color: #a8c0e0;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <strong>Living Room — Air Quality Card</strong><br>
+  Custom Home Assistant Lovelace card. Combines an ESP32-based air monitor (PM &amp; VOC sensors) with a SwitchBot Meter Pro CO2 via Bluetooth proxy.
+</div>
+
+<div class="card">
+
+  <div class="header-section">
+    <div class="header-row">
+      <div>
+        <div class="room-title">Living Room</div>
+        <div class="room-subtitle">Climate · Air Quality</div>
+      </div>
+      <div class="status-badge">
+        <span class="status-dot"></span>Moderate
+      </div>
+    </div>
+
+    <div class="main-row">
+      <div>
+        <div class="score-block">
+          <span class="score-number">72</span>
+          <span class="score-max">/ 100</span>
+        </div>
+        <div class="advice">CO2 high - open a window</div>
+
+        <div class="climate-row">
+          <div>
+            <div class="climate-value">
+              <span class="climate-number">21.4</span>
+              <span class="climate-unit">°C</span>
+            </div>
+            <div class="climate-label">TEMPERATURE</div>
+          </div>
+          <div class="divider-vertical"></div>
+          <div>
+            <div class="climate-value">
+              <span class="climate-number">52</span>
+              <span class="climate-unit">%</span>
+            </div>
+            <div class="climate-label">HUMIDITY</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="ring-container">
+        <svg class="ring-svg" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#1e3a5f" stroke-width="8"/>
+          <circle cx="50" cy="50" r="42" fill="none" stroke="#fde68a" stroke-width="8"
+                  stroke-dasharray="263.89" stroke-dashoffset="73.89" stroke-linecap="round"/>
+        </svg>
+        <div class="ring-inner">
+          <div class="ring-label">SCORE</div>
+          <div class="ring-percent">72%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="graph-section">
+    <div class="graph-legend">
+      <div class="legend-item"><span class="legend-dot" style="background:#fde68a;"></span><span style="color:#a8c0e0;">Temp</span></div>
+      <div class="legend-item"><span class="legend-dot" style="background:#a8c0e0;"></span><span style="color:#a8c0e0;">Humidity</span></div>
+    </div>
+    <svg viewBox="0 0 480 60" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="tempFade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#fde68a" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#fde68a" stop-opacity="0"/>
+        </linearGradient>
+        <linearGradient id="humidFade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#a8c0e0" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#a8c0e0" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      <path d="M0,40 C40,35 80,28 120,22 C160,18 200,15 240,18 C280,22 320,28 360,32 C400,35 440,38 480,42 L480,60 L0,60 Z"
+            fill="url(#tempFade)"/>
+      <path d="M0,40 C40,35 80,28 120,22 C160,18 200,15 240,18 C280,22 320,28 360,32 C400,35 440,38 480,42"
+            fill="none" stroke="#fde68a" stroke-width="2"/>
+      <path d="M0,30 C40,32 80,38 120,42 C160,45 200,48 240,46 C280,42 320,38 360,40 C400,42 440,38 480,32 L480,60 L0,60 Z"
+            fill="url(#humidFade)"/>
+      <path d="M0,30 C40,32 80,38 120,42 C160,45 200,48 240,46 C280,42 320,38 360,40 C400,42 440,38 480,32"
+            fill="none" stroke="#a8c0e0" stroke-width="2"/>
+    </svg>
+  </div>
+
+  <div class="tiles-section">
+    <div class="tiles-divider">
+
+      <div class="tile-grid-3">
+        <div class="tile">
+          <div class="tile-header">
+            <span class="tile-name">PM1.0</span>
+            <span class="tile-status" style="color:#86efac;">GOOD</span>
+          </div>
+          <div class="tile-value-row">
+            <span class="tile-value">10</span>
+            <span class="tile-unit">µg/m³</span>
+          </div>
+          <div class="tile-bar"><div class="tile-bar-fill" style="width:20%;background:#86efac;"></div></div>
+        </div>
+
+        <div class="tile">
+          <div class="tile-header">
+            <span class="tile-name">PM2.5</span>
+            <span class="tile-status" style="color:#fde68a;">MOD</span>
+          </div>
+          <div class="tile-value-row">
+            <span class="tile-value">19</span>
+            <span class="tile-unit">µg/m³</span>
+          </div>
+          <div class="tile-bar"><div class="tile-bar-fill" style="width:25%;background:#fde68a;"></div></div>
+        </div>
+
+        <div class="tile">
+          <div class="tile-header">
+            <span class="tile-name">PM10</span>
+            <span class="tile-status" style="color:#86efac;">GOOD</span>
+          </div>
+          <div class="tile-value-row">
+            <span class="tile-value">19</span>
+            <span class="tile-unit">µg/m³</span>
+          </div>
+          <div class="tile-bar"><div class="tile-bar-fill" style="width:7%;background:#86efac;"></div></div>
+        </div>
+      </div>
+
+      <div class="tile-grid-2">
+        <div class="tile">
+          <div class="tile-header">
+            <span class="tile-name">VOC</span>
+            <span class="tile-status" style="color:#fde68a;">MOD</span>
+          </div>
+          <div class="tile-value-row">
+            <span class="tile-value">133</span>
+            <span class="tile-unit">index</span>
+          </div>
+          <div class="tile-bar"><div class="tile-bar-fill" style="width:44%;background:#fde68a;"></div></div>
+        </div>
+
+        <div class="tile">
+          <div class="tile-header">
+            <span class="tile-name">CO₂</span>
+            <span class="tile-status" style="color:#fdba74;">HIGH</span>
+          </div>
+          <div class="tile-value-row">
+            <span class="tile-value">1,268</span>
+            <span class="tile-unit">ppm</span>
+          </div>
+          <div class="tile-bar"><div class="tile-bar-fill" style="width:63%;background:#fdba74;"></div></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  Built with mod-card, button-card, and mini-graph-card on Home Assistant.<br>
+  Sensors: ESPHome air monitor + SwitchBot Meter Pro CO2 via Bluetooth proxy.
+  <div class="badge-row">
+    <span class="tech-badge">Home Assistant</span>
+    <span class="tech-badge">ESPHome</span>
+    <span class="tech-badge">SwitchBot</span>
+    <span class="tech-badge">Bluetooth Proxy</span>
+  </div>
+</div>
+
+</body>
+</html>
