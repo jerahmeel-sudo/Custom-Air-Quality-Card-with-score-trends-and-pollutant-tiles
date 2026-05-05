@@ -110,7 +110,7 @@ card:
               <div style="display:flex;flex-direction:column;width:100%;font-family:Google Sans, Roboto, system-ui, sans-serif;color:#ffffff;text-align:left;box-sizing:border-box;">
                 <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;">
                   <div>
-                    <div style="font-size:15px;color:#ffffff;font-weight:500;">Living Room</div> # REPLACE "Living Room" with the name of your area if it is not your living room.
+                    <div style="font-size:15px;color:#ffffff;font-weight:500;">{REPLACE with your room name}</div>
                     <div style="font-size:11px;color:#6e87a8;margin-top:2px;">Climate · Air Quality</div>
                   </div>
                   <div style="background:rgba(${r},${g},${b},0.12);border:1px solid rgba(${r},${g},${b},0.35);border-radius:999px;padding:5px 12px;font-size:11px;color:${scoreColor};display:flex;align-items:center;gap:6px;">
